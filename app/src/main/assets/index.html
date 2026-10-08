@@ -123,3 +123,290 @@ nav button i{display:block;font-size:18px;margin-bottom:2px;font-style:normal}
 </style>
 </head>
 <body>
+<div class="lockScreen" id="lockScreen" style="display:none">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+    <div class="logo">CK</div>
+    <h2 id="lockGreeting">Welcome back</h2>
+    <div class="who" id="lockWho">Tap fingerprint or enter PIN</div>
+    <div class="pinDots" id="pinDots">
+      <div class="pinDot"></div><div class="pinDot"></div><div class="pinDot"></div><div class="pinDot"></div>
+    </div>
+    <div class="pinPad" id="pinPad">
+      <button class="pinBtn" onclick="pinPress('1')">1</button>
+      <button class="pinBtn" onclick="pinPress('2')">2</button>
+      <button class="pinBtn" onclick="pinPress('3')">3</button>
+      <button class="pinBtn" onclick="pinPress('4')">4</button>
+      <button class="pinBtn" onclick="pinPress('5')">5</button>
+      <button class="pinBtn" onclick="pinPress('6')">6</button>
+      <button class="pinBtn" onclick="pinPress('7')">7</button>
+      <button class="pinBtn" onclick="pinPress('8')">8</button>
+      <button class="pinBtn" onclick="pinPress('9')">9</button>
+      <button class="pinBtn empty"></button>
+      <button class="pinBtn" onclick="pinPress('0')">0</button>
+      <button class="pinBtn" onclick="pinPress('del')">⌫</button>
+    </div>
+    <div class="forgot"><button onclick="forgotPin()">Forgot PIN?</button></div>
+  </div>
+</div>
+
+<section id="s-auth">
+  <div style="text-align:center;padding:32px 0 20px">
+    <div class="avatar" style="margin:0 auto 14px;width:72px;height:72px;font-size:26px">CK</div>
+    <h1 style="font-size:22px">CK Shortcut</h1>
+    <p class="note" id="auh">Create your account to get started</p>
+  </div>
+  <div id="aub"></div>
+</section>
+
+<section id="s-setup">
+  <div class="card" style="background:linear-gradient(#0F2A22,#0A1F17);border:0;text-align:center;padding:22px">
+    <h2 style="margin:0 0 6px">Set up CK Shortcut</h2>
+    <small style="color:var(--mute)">Allow these three things so the app can run silently.</small>
+  </div>
+  <div class="list" id="stb" style="margin-top:12px"></div>
+  <button class="go" id="stc" onclick="finishSetup()" disabled>Continue</button>
+</section>
+
+<section id="s-fuliza">
+  <div style="text-align:center;padding:32px 0 20px">
+    <div class="avatar" style="margin:0 auto 14px;width:64px;height:64px;font-size:22px">💰</div>
+    <h1 style="font-size:20px">Set your Fuliza limit</h1>
+    <p class="note">We use this to show your available Fuliza balance. You can change it later.</p>
+  </div>
+  <div class="card">
+    <label for="fulizaLimit">Fuliza limit (Ksh)</label>
+    <input id="fulizaLimit" type="tel" inputmode="numeric" placeholder="e.g. 5000">
+    <button class="go" onclick="saveFulizaLimit()">Save</button>
+  </div>
+  <button class="chip" style="width:100%;text-align:center;padding:12px" onclick="skipFuliza()">Skip for now</button>
+</section>
+
+<section id="s-home" class="act">
+  <div class="greeting">
+    <div class="avatar" id="hAv" onclick="go('you')">CK</div>
+    <div class="greet-text">
+      <small id="hGreet">Good morning</small>
+      <b id="hName">Kimutai 👋</b>
+    </div>
+    <div class="hdr-icons">
+      <button onclick="go('alerts')">🔔</button>
+      <button onclick="go('search')">🔍</button>
+    </div>
+  </div>
+
+  <div class="balcards">
+    <div class="balcard mpesa">
+      <div class="top">
+        <button class="simchip" id="mpSim" onclick="pickSim('mpesa')">SIM 1 ▾</button>
+        <button class="eye" onclick="toggleBal('mpesa')" id="mpEye">👁</button>
+      </div>
+      <div class="amt" id="mpAmt">Ksh --</div>
+      <div class="sub" id="mpFul">👁 Fuliza hidden</div>
+      <button class="viewbtn" onclick="go('statements')">View Statements</button>
+    </div>
+    <div class="balcard airtime">
+      <div class="top">
+        <button class="simchip" id="airSim" onclick="pickSim('airtime')">SIM 1 ▾</button>
+        <button class="eye" onclick="toggleBal('airtime')" id="airEye">👁</button>
+      </div>
+      <div class="amt" id="airAmt">Ksh --</div>
+      <div class="sub sync-ts" id="airSync">Tap to check balance</div>
+      <button class="viewbtn" onclick="topupAirtime()">Top Up Airtime</button>
+    </div>
+  </div>
+
+  <div class="sec-hdr"><h2>Quick Actions</h2><button class="chip" onclick="go('allactions')">View all</button></div>
+  <div class="qa">
+    <button class="qa-btn" onclick="go('sendmoney')"><div class="qa-ico">💸</div>Send Money</button>
+    <button class="qa-btn" onclick="go('lipa')"><div class="qa-ico">🛒</div>Lipa na M-PESA</button>
+    <button class="qa-btn" onclick="go('withdraw')"><div class="qa-ico">🏧</div>Withdraw</button>
+    <button class="qa-btn" onclick="go('pochi')"><div class="qa-ico">📱</div>Pochi Wallet</button>
+    <button class="qa-btn" onclick="go('bundles')"><div class="qa-ico">📦</div>Buy Bundles</button>
+    <button class="qa-btn" onclick="topupAirtime()"><div class="qa-ico">☎️</div>Airtime</button>
+    <button class="qa-btn" onclick="go('till')"><div class="qa-ico">🏪</div>Send from Till</button>
+    <button class="qa-btn" onclick="go('record')"><div class="qa-ico">➕</div>Add Function</button>
+  </div>
+
+  <div class="sec-hdr" style="margin-top:20px"><h2>Frequents</h2><button class="chip" onclick="toggleFreq()" id="freqTog">▼</button></div>
+  <div id="freqWrap">
+    <div class="freq-tabs">
+      <button class="active" onclick="setFreq('apps',this)">Apps</button>
+      <button onclick="setFreq('send',this)">Send</button>
+      <button onclick="setFreq('pay',this)">Pay</button>
+      <button onclick="setFreq('bundles',this)">Bundles</button>
+    </div>
+    <div class="freq-list" id="freqList"></div>
+  </div>
+
+  <div class="sec-hdr" style="margin-top:8px"><h2>Explore & Discover 🔥</h2></div>
+  <div class="banner">
+    <b>New to CK Shortcut?</b>
+    <small>Save any USSD flow as a one-tap shortcut. Record it once, use it forever.</small>
+  </div>
+</section>
+
+<section id="s-sendmoney">
+  <h2 style="margin-top:8px">Send Money to...</h2>
+  <div class="card"><b>What do you want to do?</b><div class="list" style="margin-top:10px" id="smTypes"></div></div>
+  <div id="smForm"></div>
+  <h2>Recent transfers</h2>
+  <div class="list" id="smLog"></div>
+</section>
+
+<section id="s-bundles">
+  <h2 style="margin-top:8px">Buy Bundles</h2>
+  <div class="card" style="padding:0;overflow:hidden">
+    <button class="offer" onclick="chooseBundle('data')" style="border-radius:0;border:0;border-bottom:1px solid var(--line)">
+      <div><strong>📶 Data Bundles</strong><span>Opens *544# — you pick</span></div><strong>›</strong>
+    </button>
+    <button class="offer" onclick="chooseBundle('sms')" style="border-radius:0;border:0;border-bottom:1px solid var(--line)">
+      <div><strong>💬 SMS Bundles</strong><span>Fast automated flow</span></div><strong>›</strong>
+    </button>
+    <button class="offer" onclick="topupAirtime()" style="border-radius:0;border:0">
+      <div><strong>☎️ Airtime Top Up</strong><span>Buy airtime for any number</span></div><strong>›</strong>
+    </button>
+  </div>
+</section>
+
+<section id="s-smsbundle">
+  <h2 style="margin-top:8px">SMS Bundles</h2>
+  <label for="smsRecipient">For number</label>
+  <input id="smsRecipient" type="tel" inputmode="numeric" maxlength="13" placeholder="07XX XXX XXX">
+  <div class="sm" id="smsTabs" style="margin-top:16px">
+    <button class="active" onclick="setSmsPeriod('Daily',this)">Daily</button>
+    <button onclick="setSmsPeriod('Weekly',this)">Weekly</button>
+    <button onclick="setSmsPeriod('Monthly',this)">Monthly</button>
+  </div>
+  <div class="list" id="smsList"></div>
+</section>
+
+<section id="s-confirm">
+  <h2 style="margin-top:8px">Confirm</h2>
+  <div id="confirmBody"></div>
+</section>
+
+<section id="s-till">
+  <h2 style="margin-top:8px">Send from Till</h2>
+  <div class="card"><b>How it works</b><br><small style="color:var(--mute)">Dial *234*...# → Customer ID → PIN → confirm on Safaricom screen.</small></div>
+  <label>Send to</label><input id="tillTo" type="tel" maxlength="13" placeholder="07XX XXX XXX">
+  <label>Amount (Ksh)</label><input id="tillAmt" type="tel" inputmode="numeric">
+  <label>Customer ID (2 letters)</label><input id="tillId" maxlength="2" autocapitalize="none" oninput="this.value=this.value.replace(/[^a-zA-Z]/g,'').toLowerCase()">
+  <label>PIN</label><input id="tillPin" type="password" inputmode="numeric" maxlength="6" autocomplete="off">
+  <button class="go" onclick="runTill()">Send money</button>
+  <p class="note">Your PIN is used once and never saved.</p>
+  <h2>Recent till transfers</h2><div class="list" id="tillLog"></div>
+</section>
+
+<section id="s-record">
+  <h2 style="margin-top:8px">Record a Function</h2>
+  <div class="card" style="text-align:center;padding:22px">
+    <div style="font-size:44px;margin-bottom:10px">🎥</div>
+    <b>Record a Function</b>
+    <p class="note" style="margin-top:8px">Do the USSD flow once yourself. We'll watch and save every step, then ask you only for variables next time.</p>
+  </div>
+  <label>Function name</label><input id="recName" placeholder="e.g. Buy Airtime">
+  <label>Category</label>
+  <div class="sm" id="recCat">
+    <button class="active" onclick="setRecCat('Bundles',this)">Bundles</button>
+    <button onclick="setRecCat('Bills',this)">Bills</button>
+    <button onclick="setRecCat('Send',this)">Send</button>
+    <button onclick="setRecCat('Other',this)">Other</button>
+  </div>
+  <button class="go" onclick="startRecording()">Start Recording</button>
+  <p class="note">While recording, dial your USSD code and go through the flow. Come back here when done.</p>
+  <div id="recStatus"></div>
+</section>
+
+<section id="s-history">
+  <h2 style="margin-top:8px">History</h2>
+  <div class="sm" id="histFilters">
+    <button class="active" onclick="setHistFilter('all',this)">All</button>
+    <button onclick="setHistFilter('success',this)">Success</button>
+    <button onclick="setHistFilter('failed',this)">Failed</button>
+  </div>
+  <div class="list" id="histList"></div>
+</section>
+
+<section id="s-stats">
+  <h2 style="margin-top:8px">Stats</h2>
+  <div class="g2">
+    <div class="card"><small style="color:var(--mute)">Total shortcuts</small><b style="display:block;font-size:24px;margin-top:6px" id="stTotal">0</b></div>
+    <div class="card"><small style="color:var(--mute)">Total runs</small><b style="display:block;font-size:24px;margin-top:6px" id="stRuns">0</b></div>
+    <div class="card"><small style="color:var(--mute)">Success</small><b style="display:block;font-size:24px;margin-top:6px;color:#22C55E" id="stOk">0</b></div>
+    <div class="card"><small style="color:var(--mute)">Failed</small><b style="display:block;font-size:24px;margin-top:6px;color:#EF4444" id="stFail">0</b></div>
+  </div>
+</section>
+
+<section id="s-you">
+  <h2 style="margin-top:8px">You</h2>
+  <div id="yb"></div>
+</section>
+
+<section id="s-settings">
+  <h2 style="margin-top:8px">Settings</h2>
+  <div class="card" id="setup" style="display:none">
+    <b>Phone setup</b>
+    <div id="sst" style="margin:8px 0"></div>
+    <div class="g2" style="margin-top:10px">
+      <button class="go" style="margin:0;font-size:14px" onclick="Android.askPermissions()">Allow permissions</button>
+      <button class="go" style="margin:0;font-size:14px;background:#7a2fb0" onclick="Android.openAccessibility()">Turn on USSD</button>
+    </div>
+  </div>
+  <div id="setbody"></div>
+  <button class="go" style="background:#c0392b" onclick="confirmLogout()">Log out</button>
+</section>
+
+<section id="s-stub">
+  <h2 style="margin-top:8px" id="stt"></h2>
+  <div class="card">Coming soon.</div>
+</section>
+
+<nav role="tablist">
+  <button role="tab" aria-selected="true" onclick="tab('home')" id="n-home"><i>🏠</i>Home</button>
+  <button role="tab" aria-selected="false" onclick="tab('record')" id="n-record"><i>➕</i>Add</button>
+  <button role="tab" aria-selected="false" onclick="tab('history')" id="n-history"><i>📜</i>History</button>
+  <button role="tab" aria-selected="false" onclick="tab('stats')" id="n-stats"><i>📊</i>Stats</button>
+  <button role="tab" aria-selected="false" onclick="tab('you')" id="n-you"><i>👤</i>You</button>
+</nav>
+
+<div class="ov" id="ov" onclick="if(event.target.id=='ov'&&!busy)ovClose()">
+  <div class="ussd" onclick="event.stopPropagation()">
+    <pre id="scr"></pre>
+    <div class="in" id="inp"></div>
+    <div class="nt" id="nt"></div>
+    <div class="st" id="st"></div>
+    <button class="done" id="dn" onclick="ovClose()">Done</button>
+  </div>
+</div>
+
+<div class="ov" id="cf" onclick="if(event.target.id=='cf')cfx(0)">
+  <div class="ussd" style="background:var(--card);color:var(--ink);max-width:380px" onclick="event.stopPropagation()">
+    <b id="cft" style="font-size:16px"></b>
+    <p style="margin:10px 0 0;color:var(--mute);font-size:14px" id="cfp"></p>
+    <div class="g2" style="margin-top:16px">
+      <button class="go" style="margin:0;background:#c0392b" onclick="cfx(0)">Cancel</button>
+      <button class="go" style="margin:0" onclick="cfx(1)" id="cfy">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="dr" id="dr" onclick="dr(0)">
+  <div class="dp" onclick="event.stopPropagation()">
+    <div class="dh">
+      <div class="avatar" id="dav" style="width:56px;height:56px;font-size:20px;margin-bottom:10px">CK</div>
+      <b>CK Shortcut</b>
+      <span id="dnm" style="display:block;margin-top:4px">Guest</span>
+      <small>v1.0</small>
+    </div>
+    <button onclick="go('sendmoney')"><i>💸</i>Send Money</button>
+    <button onclick="go('bundles')"><i>📦</i>Buy Bundles</button>
+    <button onclick="go('till')"><i>🏪</i>Send from Till</button>
+    <button onclick="go('record')"><i>🎥</i>Record Function</button>
+    <button onclick="go('history')"><i>📜</i>History</button>
+    <button onclick="go('stats')"><i>📊</i>Stats</button>
+    <button onclick="go('settings')"><i>⚙️</i>Settings</button>
+    <button onclick="go('you')"><i>👤</i>You</button>
+  </div>
+</div>
+
+<script>
