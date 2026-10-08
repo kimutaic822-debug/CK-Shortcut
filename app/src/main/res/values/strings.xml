@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CK Shortcut</string>
+    <string name="acc_desc">Lets CK Shortcut read and answer USSD menus so it can run your saved shortcuts. It only acts on USSD windows while a shortcut is running.</string>
+</resources>
