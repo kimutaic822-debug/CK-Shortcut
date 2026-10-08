@@ -410,3 +410,258 @@ nav button i{display:block;font-size:18px;margin-bottom:2px;font-style:normal}
 </div>
 
 <script>
+window.onerror=function(m,s,l,c,e){document.body.insertAdjacentHTML("afterbegin",'<div style="position:fixed;top:0;left:0;right:0;background:#c0392b;color:#fff;padding:14px;z-index:99999;font-family:monospace;font-size:12px">LINE '+l+': '+m+'</div>');return true};
+
+var APPNAME="CK Shortcut",OWN="",NATIVE=!!window.Android;
+var SAVED=null,ACC=null,AUTH=false,AUTHTAB="signup",SETUPOK=false,OWNERMODE=false;
+var on=true,busy=false,air=0,com=0,AIRKNOWN=false,SIMMODE="SIM 1",SMSIM="SIM 1",SIMREAD="Both";
+var CFN=null,CFNO=null,NAVH=[],VIS=0,SHOWU=0;
+var HID={air:1,com:1,tok:1},SUBEND=0,TOK=0,FULIZA=0,FULIZA_LIMIT=0,FULIZA_HIDDEN=true;
+var AUTOMATION_MODE="every",VIBE_HANDOFF=300,VIBE_EMER=15000;
+var PIN="",PIN_CONFIRM="",PINDOTS=[],PINLEN=4,FAILS=0,LOCKED=true;
+var REC_CAT="Bundles",RECORDING=false,REC_STEPS=[],REC_TX=[];
+var TX=[],SM={type:"p2p",log:[]},CUSTOM=[];
+var SMS_PERIOD="Daily",SMS_SELECTED=null,CONFIRM_ACTION=null;
+var FREQ_TYPE="apps",HIST_FILTER="all",OO="",SAVED_ACC=null;
+var OFFERS=[
+ {m:"Sh20=1GB,1hr",p:20,sp:19,auto:0},
+ {m:"Sh20=250MB,24hr",p:20,sp:20,auto:1},
+ {m:"Sh50=750MB+50SMS,24hr",p:50,sp:50,auto:0},
+ {m:"Sh99=1.5GB,24hr",p:99,sp:99,auto:0}
+];
+var SMS_BUNDLES={
+ Daily:[{n:"20 SMS",p:5,l:"20 SMS daily",exp:"End of day"},{n:"200 SMS",p:10,l:"200 SMS daily",exp:"End of day"},{n:"Unlimited SMS",p:20,l:"Unlimited SMS daily",exp:"End of day"}],
+ Weekly:[{n:"100 SMS",p:20,l:"100 SMS weekly",exp:"7 days"},{n:"1000 SMS",p:30,l:"1000 SMS weekly",exp:"7 days"},{n:"Unlimited SMS",p:50,l:"Unlimited SMS weekly",exp:"7 days"}],
+ Monthly:[{n:"1500 SMS",p:100,l:"1500 SMS monthly",exp:"30 days"},{n:"3500 SMS",p:200,l:"3500 SMS monthly",exp:"30 days"}]
+};
+
+function $(i){return document.getElementById(i)}
+function esc(x){return String(x).replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
+function toast(t){}
+function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
+function normPn(v){var d=String(v).replace(/\D/g,"");if(d.length>12||!d)return null;if(/^254[71]\d{8}$/.test(d))return"0"+d.slice(3);if(/^0[71]\d{8}$/.test(d))return d;if(/^[71]\d{8}$/.test(d))return"0"+d;return null}
+function stamp(){return new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}
+function today(){return new Date().toLocaleDateString([],{month:"short",day:"numeric"})}
+function save(k,v){try{localStorage.setItem(k,typeof v=="string"?v:JSON.stringify(v))}catch(e){}}
+function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+
+var PAGES=["auth","setup","fuliza","home","sendmoney","bundles","smsbundle","confirm","till","record","history","stats","you","settings","stub","allactions","statements","alerts","search","lipa","withdraw","pochi"];
+function show(n){
+  PAGES.forEach(function(x){var el=$("s-"+x);if(el)el.classList.toggle("act",x==n)});
+  var tabs=["home","record","history","stats","you"];
+  tabs.forEach(function(x){var b=$("n-"+x);if(b)b.setAttribute("aria-selected",x==n)});
+  var fns={home:drawHome,history:drawHistory,stats:drawStats,you:drawYou,settings:drawSet,sendmoney:drawSendMoney,bundles:drawBundles,smsbundle:drawSmsBundle,record:drawRecord};
+  if(fns[n])fns[n]();
+  window.scrollTo(0,0);
+}
+function tab(n){NAVH=n=="home"?[]:["home"];show(n)}
+function go(n){dr(0);show(n)}
+function back(){var p=NAVH.pop();show(p||"home")}
+function nativeBack(){if($("cf").classList.contains("show")){cfx(0);return true}if($("dr").classList.contains("show")){dr(0);return true}if(document.body.getAttribute("data-pg")!="home"){back();return true}return false}
+function dr(v){$("dr").classList.toggle("show",!!v)}
+
+/* ========== LOCK SCREEN ========== */
+function showLock(){
+  $("lockScreen").style.display="flex";
+  LOCKED=true;PIN="";updatePinDots();
+  try{Fingerprint.check({title:"Unlock CK Shortcut",subtitle:"Place your finger"})}catch(e){}
+}
+function hideLock(){$("lockScreen").style.display="none";LOCKED=false}
+function updatePinDots(){
+  var dots=$("pinDots").children;
+  for(var i=0;i<dots.length;i++)dots[i].classList.toggle("filled",i<PIN.length);
+}
+function pinPress(v){
+  if(v=="del"){PIN=PIN.slice(0,-1);updatePinDots();return}
+  if(PIN.length>=PINLEN)return;
+  PIN+=v;updatePinDots();
+  if(PIN.length==PINLEN){
+    setTimeout(function(){
+      if(PIN===SAVED.pin){FAILS=0;PIN="";updatePinDots();hideLock();}
+      else{FAILS++;PIN="";updatePinDots();
+        var msg="Wrong PIN";
+        if(FAILS>=5)msg="Too many tries. Wait 30s";
+        $("lockWho").textContent=msg;
+      }
+    },150);
+  }
+}
+function forgotPin(){askC("Verify identity","Enter your ID number, phone number and year of birth to recover.","Continue",function(){go("recover")})}
+
+/* ========== AUTH ========== */
+function aerr(m){var e=$("aue");if(e)e.textContent=m}
+function setAT(v){AUTHTAB=v;drawAuth()}
+function drawAuth(){
+  var sl=(AUTHTAB==="login")||(SAVED&&AUTHTAB!=="signup");
+  $("auh").textContent=sl?"Welcome back":"Create your account to get started";
+  $("aub").innerHTML=
+    '<div class="sm" style="margin-bottom:14px">'+
+      '<button class="'+(sl?"active":"")+'" onclick="setAT(\'login\')">Log in</button>'+
+      '<button class="'+(!sl?"active":"")+'" onclick="setAT(\'signup\')">Create account</button>'+
+    '</div>'+
+    (sl?
+      '<div class="card"><label>Phone or email</label><input id="al" autocomplete="username"><label>Password</label><input id="alp" type="password" autocomplete="current-password"><p class="err" id="aue"></p><button class="go" onclick="logIn()">Log in</button></div>'
+      :
+      '<div class="card"><label>Full name</label><input id="an" autocomplete="name"><label>Business name (optional)</label><input id="ab" placeholder="e.g. My Business"><label>Phone number</label><input id="ap0" type="tel" maxlength="13"><label>Email</label><input id="ae" type="email"><label>ID number</label><input id="aid" type="tel" maxlength="12"><label>Year of birth</label><input id="adob" type="tel" maxlength="4"><label>Password (8+ chars)</label><input id="ap" type="password"><label>Confirm password</label><input id="ac" type="password"><p class="err" id="aue"></p><button class="go" onclick="signUp()">Create account</button></div>');
+  pwEyes();
+}
+function pwEyes(){
+  document.querySelectorAll("#aub input[type=password]").forEach(function(i){
+    if(i.parentNode.classList.contains("pwb"))return;
+    var w=document.createElement("div");w.className="pwb";w.style.position="relative";
+    i.parentNode.insertBefore(w,i);w.appendChild(i);
+    var b=document.createElement("button");b.type="button";
+    b.style.cssText="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--mute);cursor:pointer;font-size:16px";
+    b.textContent="👁";b.onclick=function(){i.type=i.type=="password"?"text":"password";b.textContent=i.type=="password"?"👁":"🙈"};
+    w.appendChild(b);
+  });
+}
+async function sha(t){
+  var b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("ck:"+t));
+  return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,"0")}).join("");
+}
+async function signUp(){
+  var n=$("an").value.trim(),biz=($("ab")&&$("ab").value.trim())||"Not set";
+  var p=normPn($("ap0").value),e=$("ae").value.trim().toLowerCase();
+  var id=$("aid").value.trim(),dob=$("adob").value.trim();
+  var a=$("ap").value,c=$("ac").value;
+  if(!n){aerr("Enter your full name.");return}
+  if(!p){aerr("Enter a valid phone number.");return}
+  if(!/^\S+@\S+\.\S+$/.test(e)){aerr("Enter a valid email.");return}
+  if(a.length<8){aerr("Password must be 8+ characters.");return}
+  if(!/[a-zA-Z]/.test(a)||!/[0-9]/.test(a)){aerr("Password needs letter + number.");return}
+  if(a!==c){aerr("Passwords do not match.");return}
+  if(!/@(gmail|outlook|hotmail|yahoo|live)\./i.test(e)){aerr("Use @gmail/@outlook/@hotmail/@yahoo/@live.");return}
+  if(!id||id.length<5){aerr("Enter a valid ID number.");return}
+  if(!/^\d{4}$/.test(dob)){aerr("Enter a 4-digit birth year.");return}
+  var parts=n.split(/\s+/);
+  var ini=((parts[0]||"")[0]+(parts[parts.length-1]||"")[0]).toLowerCase();
+  var recKey=(id.slice(-3))+(p.slice(-2))+(dob[2]||"0");
+  var recHash=await sha(recKey);
+  SAVED={name:n,biz:biz,phone:p,email:e,initials:ini,pin:null,recHash:recHash,owner:false,since:today()};
+  save("ck_acct",SAVED);
+  ACC=SAVED;AUTH=true;
+  save("ck_logged_in","true");save("ck_setup_done","false");
+  $("lockScreen").style.display="none";
+  show("setup");drawSetup();
+}
+async function logIn(){
+  if(!SAVED){aerr("No account on this phone.");return}
+  var l=$("al").value.trim().toLowerCase(),pw=$("alp").value;
+  if(!(l==SAVED.email||normPn(l)==SAVED.phone)){aerr("No account matches.");return}
+  var h=await sha("pw:"+pw);
+  if(h!==SAVED.pinHash){aerr("Wrong password.");return}
+  ACC=SAVED;AUTH=true;
+  save("ck_logged_in","true");
+  var sd=load("ck_setup_done",false);
+  var hasPin=!!SAVED.pin;
+  if(!hasPin){go("setup");return}
+  if(!sd){show("setup");drawSetup();return}
+  showLock();
+}
+function logOut(){
+  try{localStorage.removeItem("ck_logged_in")}catch(e){}
+  ACC=null;AUTH=false;LOCKED=false;
+  $("lockScreen").style.display="none";
+  show("auth");drawAuth();
+}
+function confirmLogout(){askC("Log out?","You will need your password to log in again.","Log out",logOut)}
+
+/* ========== SETUP ========== */
+async function finishSetup(){
+  if(!SETUPOK)return;
+  save("ck_setup_done","true");
+  if(!FULIZA_LIMIT){show("fuliza");return}
+  if(!SAVED.pin){go("createPin");return}
+  show("home");
+}
+function drawSetup(){
+  var s=setupState();
+  var rows=[
+    ["perm","Allow permissions","Calls, SMS, phone, contacts","askPerm()"],
+    ["acc","Turn on USSD service","Required for silent flows","askAcc()"],
+    ["bat","Unrestricted battery","Keep running in background","askBat()"]
+  ];
+  $("stb").innerHTML=rows.map(function(r){
+    return '<div class="card row"><div><b>'+(s[r[0]]?'✓ ':'○ ')+r[1]+'</b><br><small style="color:var(--mute)">'+r[2]+'</small></div>'+(s[r[0]]?'<span class="tag">Done</span>':'<button class="chip" onclick="'+r[3]+'">Allow</button>')+'</div>';
+  }).join("");
+  SETUPOK=!!(s.perm&&s.acc&&s.bat);
+  $("stc").disabled=!SETUPOK;
+}
+function setupState(){
+  if(NATIVE){try{var s=JSON.parse(Android.status());return{perm:s.call&&s.sms&&s.phone&&s.contacts,acc:s.acc,bat:s.battery}}catch(e){return{perm:0,acc:0,bat:0}}}
+  return{perm:1,acc:1,bat:1};
+}
+function askPerm(){if(NATIVE)Android.askPermissions();setTimeout(drawSetup,1500)}
+function askAcc(){if(NATIVE)Android.openAccessibility();setTimeout(drawSetup,2500)}
+function askBat(){if(NATIVE)Android.askBattery();setTimeout(drawSetup,2500)}
+
+/* ========== FULIZA ========== */
+function saveFulizaLimit(){
+  var v=parseInt($("fulizaLimit").value.replace(/\D/g,""))||0;
+  if(v<1){alert("Enter a valid amount");return}
+  FULIZA_LIMIT=v;save("ck_fuliza_limit",v);
+  if(!SAVED.pin){go("createPin")}else{show("home");drawHome()}
+}
+function skipFuliza(){if(!SAVED.pin){go("createPin")}else{show("home");drawHome()}}
+
+/* ========== PIN SETUP ========== */
+function createPinScreen(){
+  $("s-setup").classList.remove("act");
+  PAGES.forEach(function(x){var el=$("s-"+x);if(el)el.classList.remove("act")});
+  $("lockScreen").style.display="flex";
+  $("lockGreeting").textContent="Create your app PIN";
+  $("lockWho").textContent="Choose 4-6 digits";
+  PIN="";PIN_CONFIRM="";PINLEN=4;updatePinDots();
+}
+function confirmPinScreen(){
+  $("lockGreeting").textContent="Confirm your PIN";
+  $("lockWho").textContent="Enter it again";
+  PIN_CONFIRM=PIN;PIN="";updatePinDots();
+}
+
+/* ========== HOME ========== */
+function greeting(){
+  var h=new Date().getHours();
+  if(h>=5&&h<12)return{em:"🌅",t:"Good morning"};
+  if(h>=12&&h<17)return{em:"☀️",t:"Good afternoon"};
+  if(h>=17&&h<22)return{em:"👋",t:"Good evening"};
+  return{em:"🌙",t:"Good night"};
+}
+function surname(n){var p=String(n||"").split(/\s+/);return p[p.length-1]||p[0]||"friend"}
+function drawHome(){
+  if(!ACC)return;
+  var g=greeting();
+  $("hAv").textContent=ACC.initials?ACC.initials.toUpperCase():"CK";
+  $("hGreet").textContent=g.t;
+  $("hName").textContent=surname(ACC.name)+" "+g.em;
+  $("mpAmt").textContent=HID.air?"Ksh ****":"Ksh "+(com||0).toFixed(2);
+  $("airAmt").textContent=HID.air?"Ksh ****":"Ksh "+(air||0).toFixed(2);
+  $("airSync").textContent=AIRKNOWN?"Tap to check balance":"Synced recently";
+  $("mpFul").textContent=FULIZA_HIDDEN?"👁 Fuliza hidden":"Fuliza: Ksh "+(FULIZA_LIMIT-FULIZA).toFixed(2)+" available of Ksh "+FULIZA_LIMIT;
+  $("mpSim").textContent=SIMMODE+" ▾";
+  $("airSim").textContent=SIMMODE+" ▾";
+  drawFreq();
+}
+function toggleBal(k){HID[k]=!HID[k]?1:0;drawHome()}
+function pickSim(k){askC("Choose SIM","Which SIM should we use?","SIM 1",function(){SIMMODE="SIM 1";save("ck_simmode",SIMMODE);drawHome()},function(){SIMMODE="SIM 2";save("ck_simmode",SIMMODE);drawHome()})}
+function toggleFreq(){var w=$("freqWrap");var v=w.style.display=="none";w.style.display=v?"block":"none";$("freqTog").textContent=v?"▼":"▲"}
+function drawFreq(){
+  var data={
+    apps:[{ico:"📶",n:"1GB Data",p:19},{ico:"💬",n:"200 SMS",p:10},{ico:"☎️",n:"Airtime 100",p:100}],
+    send:[{ico:"💸",n:"Send Mum",p:500},{ico:"📱",n:"Pochi",p:200},{ico:"🏪",n:"Till Send",p:100}],
+    pay:[{ico:"🛒",n:"Lipa",p:0},{ico:"💡",n:"KPLC",p:100},{ico:"📺",n:"DSTV",p:400}],
+    bundles:[{ico:"📦",n:"1GB",p:20},{ico:"💬",n:"SMS 200",p:10},{ico:"📶",n:"2GB",p:50}]
+  };
+  $("freqList").innerHTML=(data[FREQ_TYPE]||[]).map(function(x){
+    return '<div class="freq-item" onclick="runFreq(\''+esc(x.n)+'\')"><div class="ico">'+x.ico+'</div><b>'+x.n+'</b><small>Ksh '+x.p+'</small></div>';
+  }).join("");
+}
+function setFreq(t,el){FREQ_TYPE=t;document.querySelectorAll("#s-home .freq-tabs button").forEach(function(b){b.classList.remove("active")});el.classList.add("active");drawFreq()}
+function runFreq(n){go("sendmoney")}
+
+/* ========== AIRTIME ========== */
+async function topupAirtime(){
+  if(NATIVE){try{Android.ussdQuick("topup","*144#",1)}catch(e){}}
+  else{await wait(500);air=Math.random()*200;AIRKNOWN=true;drawHome()}
+  }
